@@ -203,5 +203,4 @@ func hbookURL(url, service, path string, win fyne.Window) {
 	default:
 		fmt.Printf("Undefined Symbol.\n")
 	}
-	dialog.ShowInformation("Download Message", "Finished.", win)
 }
