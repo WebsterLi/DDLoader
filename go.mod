@@ -1,4 +1,4 @@
-module hder
+module ddloader
 
 go 1.13
 

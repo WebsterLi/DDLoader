@@ -46,7 +46,6 @@ func makeCheckList(num int)[]fyne.CanvasObject{
                 items = append(items, check)
 		check.Hide()
         }
-
         return items
 }
 
@@ -99,7 +98,7 @@ func nReadSearch(site string, win fyne.Window)(map[string]galdl, int){
 
 func makeGASTab(win fyne.Window) fyne.CanvasObject {
 	var candidate map[string]galdl
-	var end int
+	var selected, end int
 	var service, site, path string
 	galleryRadio := widget.NewRadioGroup([]string{"NHentai", "Wnacg"}, func(s string) {
 		switch s{
@@ -144,22 +143,7 @@ func makeGASTab(win fyne.Window) fyne.CanvasObject {
 	serviceSelect.SetSelected("Artist")
 	vlist := makeCheckList(25)
 	vscrollBox := container.NewVScroll(container.NewVBox(vlist...))
-	downloadButton := &widget.Button{Text: "Download", Importance: widget.HighImportance, OnTapped: func(){
-		dialog.ShowInformation("Info", "Downloading selected gallery...",win)
-		switch service{
-		case "W":
-		case "N":
-			//TODO change to go func with progress bar
-			for _, value := range candidate{
-				want,_ := value.dl.Get()
-				if want{
-					dlsite := fmt.Sprintf("https://nhentai.net%s",value.name)
-					hbookURL(dlsite,service,path,win)
-				}
-			}
-		default:
-		}
-	}}
+
 	applyButton := &widget.Button{Text: "Apply", Importance: widget.MediumImportance, OnTapped: func(){
 		switch serviceSelect.SelectedIndex(){
 		case 0:
@@ -206,6 +190,35 @@ func makeGASTab(win fyne.Window) fyne.CanvasObject {
 		default:
 			dialog.ShowInformation("Empty Selection", "Please select mode.", win)
 		}
+	}}
+	downloadButton := &widget.Button{Text: "Download", Importance: widget.HighImportance, OnTapped: func(){
+		d := dialog.NewProgress("Info", "Downloading...", win)
+		d.Show()
+		selected = 0//reset selected gallery num
+		for _, value := range candidate{
+				want,_ := value.dl.Get()
+				if want{
+					selected ++
+			}
+		}
+		switch service{
+		case "W":
+		case "N":
+			//TODO change to go func with progress bar
+			prog := 0.0
+			for _, value := range candidate{
+				want,_ := value.dl.Get()
+				if want{
+					prog += float64(1)/float64(selected)
+					d.SetValue(prog)
+					dlsite := fmt.Sprintf("https://nhentai.net%s",value.name)
+					hbookURL(dlsite,service,path,win)
+				}
+			}
+		default:
+		}
+		d.Hide()
+		dialog.ShowInformation("Info", "All download finished.", win)
 	}}
 	optionBox := container.NewGridWithRows(2,applyButton,downloadButton,)
 
