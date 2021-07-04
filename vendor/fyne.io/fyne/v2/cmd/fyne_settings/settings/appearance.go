@@ -70,6 +70,7 @@ func (s *Settings) LoadAppearanceScreen(w fyne.Window) fyne.CanvasObject {
 			s.colors = append(s.colors, b)
 		}
 	}
+
 	swatch := container.NewGridWithColumns(len(s.colors), s.colors...)
 	appearance := widget.NewForm(widget.NewFormItem("Main Color", swatch),
 		widget.NewFormItem("Theme", themes))
@@ -88,7 +89,7 @@ func (s *Settings) LoadAppearanceScreen(w fyne.Window) fyne.CanvasObject {
 			s.appliedScale(s.fyneSettings.Scale)
 		}})
 
-	return container.NewBorder(box, bottom, nil, nil)
+	return container.NewBorder(box, bottom, nil, nil/*, s.preview*/)
 }
 
 func (s *Settings) chooseTheme(name string) {

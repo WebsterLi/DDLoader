@@ -2,7 +2,6 @@
 fyne.io/fyne/v2
 fyne.io/fyne/v2/app
 fyne.io/fyne/v2/canvas
-fyne.io/fyne/v2/cmd/fyne_demo/data
 fyne.io/fyne/v2/cmd/fyne_settings/settings
 fyne.io/fyne/v2/container
 fyne.io/fyne/v2/data/binding
@@ -30,6 +29,10 @@ fyne.io/fyne/v2/test
 fyne.io/fyne/v2/theme
 fyne.io/fyne/v2/tools/playground
 fyne.io/fyne/v2/widget
+# github.com/PuerkitoBio/goquery v1.7.0
+github.com/PuerkitoBio/goquery
+# github.com/andybalholm/cascadia v1.1.0
+github.com/andybalholm/cascadia
 # github.com/davecgh/go-spew v1.1.1
 github.com/davecgh/go-spew/spew
 # github.com/fredbi/uri v0.0.0-20181227131451-3dcfdacbaaf3
