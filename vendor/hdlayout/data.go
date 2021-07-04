@@ -5,41 +5,25 @@ import (
 	"fyne.io/fyne/v2/cmd/fyne_settings/settings"
 )
 
-// Tutorial defines the data structure for a tutorial
-type Tutorial struct {
-	Title, Intro string
-	View         func(w fyne.Window) fyne.CanvasObject
+type Section struct {
+	Title	string
+	View	func(w fyne.Window) fyne.CanvasObject
 }
 
 var (
-	// Tutorials defines the metadata for each tutorial
-	Tutorials = map[string]Tutorial{
-		"welcome": {"Welcome", "", welcomeScreen},
+	// Sections defines the metadata for each section
+	Sections = map[string]Section{
+		"welcome": {"Welcome", welcomeScreen},
 		"hbook": {"GalleryDL",
-			"Enter ID/URL to download gallery.",
-			makeDownloadTab,
-		},
-		"split": {"Split_Test",
-			"A split container divides the container in two pieces that the user can resize.",
-			makeSplitTab,
-		},
-		"card": {"Card_Test",
-			"Group content and widgets.",
-			makeCardTab,
-		},
-		"progress": {"Progress_Test",
-			"Show duration or the need to wait for a task.",
-			makeProgressTab,
+			makeGalleryTab,
 		},
 		"setting" : {"Setting",
-			"Fyne theme appearence setting.",
-
 			settings.NewSettings().LoadAppearanceScreen,
 		},
 	}
 
-	// TutorialIndex  defines how our tutorials should be laid out in the index tree
-	TutorialIndex = map[string][]string{
-		"":	{"welcome", "hbook", "split", "card", "progress", "setting"},
+	//SectionIndex  defines how our tutorials should be laid out in the index tree
+	SectionIndex = map[string][]string{
+		"":	{"welcome", "hbook", "setting"},
 	}
 )
