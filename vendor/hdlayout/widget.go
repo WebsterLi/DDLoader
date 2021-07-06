@@ -2,7 +2,6 @@ package hdlayout
 
 import (
 	"fmt"
-	"time"
 	"strconv"
 
 	"bytes"
@@ -16,16 +15,10 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/layout"
-	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"fyne.io/fyne/v2/dialog"
 )
 
-var (
-	progress    *widget.ProgressBar
-	infProgress *widget.ProgressBarInfinite
-	endProgress chan interface{}
-)
 type galdl struct{
 	name string
 	dl binding.Bool
@@ -138,11 +131,15 @@ func makeGASTab(win fyne.Window) fyne.CanvasObject {
 		}
 	})
 	setpathRadio.Horizontal = true
+	setpathRadio.SetSelected("Default")
+	//setpathRadio.Hide()//TODO
+	//setpathButton.Hide()//TODO
 	setpathBox := container.NewGridWithRows(1,setpathRadio, setpathButton)
-	serviceSelect := widget.NewSelect([]string{"Artist", "Search"}, func(s string) {})
-	serviceSelect.SetSelected("Artist")
 	vlist := makeCheckList(25)
-	vscrollBox := container.NewVScroll(container.NewVBox(vlist...))
+	scrollBox := container.NewScroll(container.NewVBox(vlist...))
+
+	serviceSelect := widget.NewSelect([]string{"Artist", "Search"}, func(s string) {})
+	serviceSelect.SetSelected("Search")
 
 	applyButton := &widget.Button{Text: "Apply", Importance: widget.MediumImportance, OnTapped: func(){
 		switch serviceSelect.SelectedIndex(){
@@ -191,9 +188,18 @@ func makeGASTab(win fyne.Window) fyne.CanvasObject {
 			dialog.ShowInformation("Empty Selection", "Please select mode.", win)
 		}
 	}}
+	entryBox := container.NewGridWithRows(1, galleryRadio, applyButton,)
+
+	titleText := widget.NewTextGrid()
+	statusText := widget.NewTextGrid()
+	infoBox := container.NewHScroll(container.NewVBox(titleText, statusText,))
+	progBar := widget.NewProgressBar()
+	downprogBox := container.NewGridWithRows(2,infoBox,progBar,)
+
 	downloadButton := &widget.Button{Text: "Download", Importance: widget.HighImportance, OnTapped: func(){
-		d := dialog.NewProgress("Info", "Downloading...", win)
-		d.Show()
+
+		d := dialog.NewCustom("Info", "Hide", downprogBox, win)
+		d.Resize(fyne.NewSize(450, 150))
 		selected = 0//reset selected gallery num
 		for _, value := range candidate{
 				want,_ := value.dl.Get()
@@ -201,38 +207,47 @@ func makeGASTab(win fyne.Window) fyne.CanvasObject {
 					selected ++
 			}
 		}
+		ratio := float64(1)/float64(selected)
 		switch service{
 		case "W":
 		case "N":
-			//TODO change to go func with progress bar
+			if len(candidate)==0{
+				dialog.ShowInformation("Error","Please select gallery first.",win)
+				return
+			}
+			d.Show()
 			prog := 0.0
 			for _, value := range candidate{
 				want,_ := value.dl.Get()
 				if want{
-					prog += float64(1)/float64(selected)
-					d.SetValue(prog)
 					dlsite := fmt.Sprintf("https://nhentai.net%s",value.name)
-					hbookURL(dlsite,service,path,win)
+					title := strings.TrimSpace(GetTitle(dlsite, win))
+					titleText.SetText(fmt.Sprintf("Title: %s", title))
+					statusText.SetText("Status: html info parsing...")
+					request := []string{dlsite, service, path, title}
+					hbookURL(request,statusText,progBar,prog,ratio)
+					prog += ratio
+					progBar.SetValue(prog)
 				}
 			}
 		default:
+			dialog.ShowInformation("Error","Please select service.",win)
+			return
 		}
-		d.Hide()
-		dialog.ShowInformation("Info", "All download finished.", win)
+		dialog.ShowInformation("Info", "All task finished.", win)
 	}}
-	optionBox := container.NewGridWithRows(2,applyButton,downloadButton,)
 
 	return container.NewBorder(
 		container.NewVBox(
 			serviceSelect,
-			galleryRadio,
-			ASEntry,),
+			ASEntry,
+			entryBox,),
 		container.NewVBox(
 			setpathBox,
-			optionBox,),
+			downloadButton,),
 		nil,
 		nil,
-		vscrollBox,
+		scrollBox,
 	)
 }
 
@@ -283,21 +298,48 @@ func makeGIUTab(win fyne.Window) fyne.CanvasObject {
 			setpathButton.Disable()
 		}
 	})
+	setpathRadio.SetSelected("Default")
+	//setpathRadio.Hide()//TODO
+	//setpathButton.Hide()//TODO
 	setpathRadio.Horizontal = true
 	setpathBox := container.NewGridWithRows(1,setpathRadio, setpathButton)
 	folderCheck := widget.NewCheck("Create folder with gallery name", func(on bool) {nameget = on})
 	folderCheck.Hide()//TODO
+
+	titleText := widget.NewTextGrid()
+	statusText := widget.NewTextGrid()
+	infoBox := container.NewHScroll(container.NewVBox(titleText, statusText,))
+	progBar := widget.NewProgressBar()
+	downprogBox := container.NewGridWithRows(2,infoBox,progBar,)
+
 	downloadButton := &widget.Button{Text: "Download", Importance: widget.HighImportance, OnTapped: func(){
+		d := dialog.NewCustom("Info", "Hide", downprogBox, win)
+		d.Resize(fyne.NewSize(450, 150))
+		d.Show()
 		site = URLEntry.Text
 		var err error
 		id, err = strconv.Atoi(URLEntry.Text)
 
+		//if URLEntry is pure string => id
 		if err == nil {
 			if (id != 0 && service != "") {
-				hbookID(id,service,path,win)
+				switch service{
+				case "N":
+					site = fmt.Sprintf("https://nhentai.net/g/%d", id)
+				case "W":
+					site = fmt.Sprintf("http://www.wnacg.com/photos-index-aid-%d.html", id)
+				default :
+					dialog.ShowInformation("Error", "Please select service.", win)
+				}
+				title := strings.TrimSpace(GetTitle(site, win))
+				titleText.SetText(fmt.Sprintf("Title: %s", title))
+				statusText.SetText("Status: html info parsing...")
+				request := []string{site, service, path, title}
+				hbookURL(request,statusText,progBar,0.0,1.0)
 			} else {
-				dialog.ShowInformation("Empty Entry", "Please enter gallery id.", win)
+				dialog.ShowInformation("Error", "Please enter gallery id or url.", win)
 			}
+		//URL case
 		} else {
 			if site != ""{
 				u,_ := url.Parse(site)
@@ -311,82 +353,22 @@ func makeGIUTab(win fyne.Window) fyne.CanvasObject {
 				}
 			}
 			if service != ""{
-				hbookURL(site,service,path,win)
-			} else {
-				dialog.ShowInformation("Empty Entry", "Please enter gallery url.", win)
+				title := strings.TrimSpace(GetTitle(site, win))
+				titleText.SetText(fmt.Sprintf("Title: %s", title))
+				statusText.SetText("Status: html info parsing...")
+				request := []string{site, service, path}
+				hbookURL(request,statusText,progBar,0.0,1.0)
 			}
 		}
 	}}
 
 	return container.NewVBox(
-		galleryRadio,
 		URLEntry,
+		galleryRadio,
 		layout.NewSpacer(),
 		setpathBox,
 		folderCheck,
 		downloadButton,
 	)
-}
-
-func makeProgressTab(_ fyne.Window) fyne.CanvasObject {
-	stopProgress()
-
-	progress = widget.NewProgressBar()
-
-	infProgress = widget.NewProgressBarInfinite()
-	endProgress = make(chan interface{}, 1)
-	startProgress()
-
-	return container.NewVBox(
-		widget.NewLabel("Percent"), progress,
-		widget.NewLabel("Infinite"), infProgress)
-}
-
-func startProgress() {
-	progress.SetValue(0)
-	select { // ignore stale end message
-	case <-endProgress:
-	default:
-	}
-
-	go func() {
-		end := endProgress
-		num := 0.0
-		for num < 1.0 {
-			time.Sleep(16 * time.Millisecond)
-			select {
-			case <-end:
-				return
-			default:
-			}
-
-			progress.SetValue(num)
-			num += 0.002
-		}
-
-		progress.SetValue(1)
-
-		// TODO make sure this resets when we hide etc...
-		stopProgress()
-	}()
-	infProgress.Start()
-}
-
-func stopProgress() {
-	if !infProgress.Running() {
-		return
-	}
-
-	infProgress.Stop()
-	endProgress <- struct{}{}
-}
-
-// widgetScreen shows a panel containing widget demos
-func widgetScreen(_ fyne.Window) fyne.CanvasObject {
-	content := container.NewVBox(
-		widget.NewLabel("Labels"),
-		widget.NewButtonWithIcon("Icons", theme.HomeIcon(), func() {}),
-		widget.NewSlider(0, 1))
-	return container.NewCenter(content)
 }
 

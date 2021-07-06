@@ -11,7 +11,6 @@ import (
 	"sync"
 	"path/filepath"
 
-	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/widget"
 )
 
@@ -129,6 +128,8 @@ func WnPage(url string, statusText *widget.TextGrid, progBar *widget.ProgressBar
 	photo_urls := re.FindAllString(body, -1)
 	//fmt.Println(photo_urls)
 	tokens := make(chan int, 5)
+	tmpratio := ratio/(float64)(len(photo_urls))
+	tmpstart := start
 	for _, photo_url := range photo_urls {
 		wg.Add(1)
 		tokens <- 1
@@ -148,6 +149,8 @@ func WnPage(url string, statusText *widget.TextGrid, progBar *widget.ProgressBar
 			}
 			downImg(img, fn)
 			statusText.SetText(fmt.Sprintf("Downloading: %s", fn))
+			tmpstart += tmpratio
+			progBar.SetValue(start)
 			<-tokens
 			defer wg.Done()
 		}(photo_url)
@@ -164,20 +167,17 @@ func WnPage(url string, statusText *widget.TextGrid, progBar *widget.ProgressBar
 	WnPage(next_page, statusText, progBar, start, ratio)
 }
 
-func hbookURL(request []string, statusText *widget.TextGrid, progBar *widget.ProgressBar, start, ratio float64, win fyne.Window) {
+func hbookURL(request []string, statusText *widget.TextGrid, progBar *widget.ProgressBar, start, ratio float64) {
 	url := request[0]
 	service := request[1]
 	path := request[2]
+	title := request[3]
 	//turn to url
 	switch service{
 	case "n","N":
-		title := strings.TrimSpace(GetTitle(url, win))
-		if title == ""{return}
 		saveTo = filepath.Join(path, "N_gallery", title)
 		NhPage(url, statusText, progBar, start, ratio)
 	case "w","W":
-		title := strings.TrimSpace(GetTitle(url, win))
-		if title == ""{return}
 		saveTo = filepath.Join(path, "W_gallery", title)
 		WnPage(url, statusText, progBar, start, ratio)
 	default:
