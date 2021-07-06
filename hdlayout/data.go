@@ -2,7 +2,6 @@ package hdlayout
 
 import (
 	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/cmd/fyne_settings/settings"
 )
 
 type Section struct {
@@ -13,17 +12,19 @@ type Section struct {
 var (
 	// Sections defines the metadata for each section
 	Sections = map[string]Section{
-		"welcome": {"Welcome", welcomeScreen},
 		"hbook": {"GalleryDL",
 			makeGalleryTab,
 		},
-		"setting" : {"Setting",
-			settings.NewSettings().LoadAppearanceScreen,
+		"theme" : {"Theme",
+			NewSettings().LoadAppearanceScreen,
+		},
+		"license": {"License",
+			licenseScreen,
 		},
 	}
 
 	//SectionIndex  defines how our tutorials should be laid out in the index tree
 	SectionIndex = map[string][]string{
-		"":	{"welcome", "hbook", "setting"},
+		"":	{"hbook", "theme", "license", },
 	}
 )

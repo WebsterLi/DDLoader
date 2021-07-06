@@ -132,13 +132,14 @@ func makeGASTab(win fyne.Window) fyne.CanvasObject {
 	})
 	setpathRadio.Horizontal = true
 	setpathRadio.SetSelected("Default")
-	setpathRadio.Hide()//TODO
-	setpathButton.Hide()//TODO
+	//setpathRadio.Hide()//TODO
+	//setpathButton.Hide()//TODO
 	setpathBox := container.NewGridWithRows(1,setpathRadio, setpathButton)
-	serviceSelect := widget.NewSelect([]string{"Artist", "Search"}, func(s string) {})
-	serviceSelect.SetSelected("Search")
 	vlist := makeCheckList(25)
 	scrollBox := container.NewScroll(container.NewVBox(vlist...))
+
+	serviceSelect := widget.NewSelect([]string{"Artist", "Search"}, func(s string) {})
+	serviceSelect.SetSelected("Search")
 
 	applyButton := &widget.Button{Text: "Apply", Importance: widget.MediumImportance, OnTapped: func(){
 		switch serviceSelect.SelectedIndex(){
@@ -187,6 +188,7 @@ func makeGASTab(win fyne.Window) fyne.CanvasObject {
 			dialog.ShowInformation("Empty Selection", "Please select mode.", win)
 		}
 	}}
+	entryBox := container.NewGridWithRows(1, galleryRadio, applyButton,)
 
 	titleText := widget.NewTextGrid()
 	statusText := widget.NewTextGrid()
@@ -198,7 +200,6 @@ func makeGASTab(win fyne.Window) fyne.CanvasObject {
 
 		d := dialog.NewCustom("Info", "Hide", downprogBox, win)
 		d.Resize(fyne.NewSize(450, 150))
-		d.Show()
 		selected = 0//reset selected gallery num
 		for _, value := range candidate{
 				want,_ := value.dl.Get()
@@ -210,34 +211,40 @@ func makeGASTab(win fyne.Window) fyne.CanvasObject {
 		switch service{
 		case "W":
 		case "N":
-			//TODO change to go func with progress bar
+			if len(candidate)==0{
+				dialog.ShowInformation("Error","Please select gallery first.",win)
+				return
+			}
+			d.Show()
 			prog := 0.0
-			for key, value := range candidate{
+			for _, value := range candidate{
 				want,_ := value.dl.Get()
 				if want{
 					dlsite := fmt.Sprintf("https://nhentai.net%s",value.name)
-					titleText.SetText(fmt.Sprintf("Title: %s", key))
+					title := strings.TrimSpace(GetTitle(dlsite, win))
+					titleText.SetText(fmt.Sprintf("Title: %s", title))
 					statusText.SetText("Status: html info parsing...")
-					request := []string{dlsite, service, path}
-					hbookURL(request,statusText,progBar,prog,ratio,win)
+					request := []string{dlsite, service, path, title}
+					hbookURL(request,statusText,progBar,prog,ratio)
 					prog += ratio
 					progBar.SetValue(prog)
 				}
 			}
 		default:
+			dialog.ShowInformation("Error","Please select service.",win)
+			return
 		}
 		dialog.ShowInformation("Info", "All task finished.", win)
 	}}
-	optionBox := container.NewGridWithRows(1,applyButton,downloadButton,)
 
 	return container.NewBorder(
 		container.NewVBox(
 			serviceSelect,
-			galleryRadio,
-			ASEntry,),
+			ASEntry,
+			entryBox,),
 		container.NewVBox(
 			setpathBox,
-			optionBox,),
+			downloadButton,),
 		nil,
 		nil,
 		scrollBox,
@@ -292,8 +299,8 @@ func makeGIUTab(win fyne.Window) fyne.CanvasObject {
 		}
 	})
 	setpathRadio.SetSelected("Default")
-	setpathRadio.Hide()//TODO
-	setpathButton.Hide()//TODO
+	//setpathRadio.Hide()//TODO
+	//setpathButton.Hide()//TODO
 	setpathRadio.Horizontal = true
 	setpathBox := container.NewGridWithRows(1,setpathRadio, setpathButton)
 	folderCheck := widget.NewCheck("Create folder with gallery name", func(on bool) {nameget = on})
@@ -327,8 +334,8 @@ func makeGIUTab(win fyne.Window) fyne.CanvasObject {
 				title := strings.TrimSpace(GetTitle(site, win))
 				titleText.SetText(fmt.Sprintf("Title: %s", title))
 				statusText.SetText("Status: html info parsing...")
-				request := []string{site, service, path}
-				hbookURL(request,statusText,progBar,0.0,1.0,win)
+				request := []string{site, service, path, title}
+				hbookURL(request,statusText,progBar,0.0,1.0)
 			} else {
 				dialog.ShowInformation("Error", "Please enter gallery id or url.", win)
 			}
@@ -350,14 +357,14 @@ func makeGIUTab(win fyne.Window) fyne.CanvasObject {
 				titleText.SetText(fmt.Sprintf("Title: %s", title))
 				statusText.SetText("Status: html info parsing...")
 				request := []string{site, service, path}
-				hbookURL(request,statusText,progBar,0.0,1.0,win)
+				hbookURL(request,statusText,progBar,0.0,1.0)
 			}
 		}
 	}}
 
 	return container.NewVBox(
-		galleryRadio,
 		URLEntry,
+		galleryRadio,
 		layout.NewSpacer(),
 		setpathBox,
 		folderCheck,

@@ -11,8 +11,7 @@ import (
 	"sync"
 	"path/filepath"
 
-	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/dialog"
+	"fyne.io/fyne/v2/widget"
 )
 
 var saveTo string
@@ -84,13 +83,11 @@ func downImg(url, fn string) {
 	} else {
 		filename = filepath.Join(saveTo, getFileName(url))
 	}
-	fmt.Printf("Downloading: ")
-	fmt.Println(filepath.Base(filename))
 	err = ioutil.WriteFile(filename, body, 0755)
 	panic(err)
 }
 
-func NhPage(url string, win fyne.Window) {
+func NhPage(url string, statusText *widget.TextGrid, progBar *widget.ProgressBar, start, ratio float64) {
 	body := get(url)
 	//fmt.Println(body)
 	var wg sync.WaitGroup
@@ -101,6 +98,7 @@ func NhPage(url string, win fyne.Window) {
 	photo_urls = removeDuplicateValues(photo_urls)
 	//fmt.Println(photo_urls)
 	tokens := make(chan int, 10)
+	ratio /= (float64)(len(photo_urls))
 	for _, photo_url := range photo_urls {
 		wg.Add(1)
 		tokens <- 1
@@ -112,6 +110,9 @@ func NhPage(url string, win fyne.Window) {
 		go func(img string) {
 			fn := strings.TrimSuffix(filepath.Base(img), filepath.Ext(img))
 			downImg(img, fn)
+			statusText.SetText(fmt.Sprintf("Downloading: %s", fn))
+			start += ratio
+			progBar.SetValue(start)
 			<-tokens
 			defer wg.Done()
 		}(photo_url)
@@ -120,13 +121,15 @@ func NhPage(url string, win fyne.Window) {
 	return
 }
 
-func WnPage(url string, win fyne.Window) {
+func WnPage(url string, statusText *widget.TextGrid, progBar *widget.ProgressBar, start, ratio float64) {
 	body := get(url)
 	var wg sync.WaitGroup
 	re := regexp.MustCompile("photos-view-id-[0-9]+.html")
 	photo_urls := re.FindAllString(body, -1)
 	//fmt.Println(photo_urls)
 	tokens := make(chan int, 5)
+	tmpratio := ratio/(float64)(len(photo_urls))
+	tmpstart := start
 	for _, photo_url := range photo_urls {
 		wg.Add(1)
 		tokens <- 1
@@ -145,6 +148,9 @@ func WnPage(url string, win fyne.Window) {
 				fn = search[len(search) - 1][1]
 			}
 			downImg(img, fn)
+			statusText.SetText(fmt.Sprintf("Downloading: %s", fn))
+			tmpstart += tmpratio
+			progBar.SetValue(start)
 			<-tokens
 			defer wg.Done()
 		}(photo_url)
@@ -158,48 +164,22 @@ func WnPage(url string, win fyne.Window) {
 	next_page := urls[1]
 	// fmt.Println(next_page)
 	next_page = "http://www.wnacg.com/" + next_page
-	WnPage(next_page, win)
+	WnPage(next_page, statusText, progBar, start, ratio)
 }
 
-func hbookID(albumId int, service string, path string, win fyne.Window) {
-	//turn to url
-	var url string
-	switch service{
-	case "n","N":
-		url = fmt.Sprintf("https://nhentai.net/g/%d", albumId)
-		title := strings.TrimSpace(GetTitle(url, win))
-		if title == ""{return}
-		saveTo = filepath.Join(path, "N_gallery", title)
-		fmt.Printf("Gallery Title: %s\n",saveTo)
-		NhPage(url,win)
-	case "w","W":
-		url = fmt.Sprintf("http://www.wnacg.com/photos-index-aid-%d.html", albumId)
-		title := strings.TrimSpace(GetTitle(url, win))
-		if title == ""{return}
-		saveTo = filepath.Join(path, "W_gallery", title)
-		fmt.Printf("Gallery Title: %s\n",saveTo)
-		WnPage(url,win)
-	default:
-		fmt.Printf("Undefined Symbol.\n")
-	}
-	dialog.ShowInformation("Download Message", "Finished.", win)
-}
-
-func hbookURL(url, service, path string, win fyne.Window) {
+func hbookURL(request []string, statusText *widget.TextGrid, progBar *widget.ProgressBar, start, ratio float64) {
+	url := request[0]
+	service := request[1]
+	path := request[2]
+	title := request[3]
 	//turn to url
 	switch service{
 	case "n","N":
-		title := strings.TrimSpace(GetTitle(url, win))
-		if title == ""{return}
 		saveTo = filepath.Join(path, "N_gallery", title)
-		fmt.Printf("Gallery Title: %s\n",saveTo)
-		NhPage(url,win)
+		NhPage(url, statusText, progBar, start, ratio)
 	case "w","W":
-		title := strings.TrimSpace(GetTitle(url, win))
-		if title == ""{return}
 		saveTo = filepath.Join(path, "W_gallery", title)
-		fmt.Printf("Gallery Title: %s\n",saveTo)
-		WnPage(url,win)
+		WnPage(url, statusText, progBar, start, ratio)
 	default:
 		fmt.Printf("Undefined Symbol.\n")
 	}

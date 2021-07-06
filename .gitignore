@@ -1,4 +1,7 @@
 N_gallery
 W_gallery
-Icon.png
+*.png
+*.go_bak
 tags
+ddloader
+ddloader.exe
