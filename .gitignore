@@ -4,6 +4,5 @@ backup
 *.png
 *.go_bak
 tags
-ddloader
-ddloader.exe
 *.swp
+ddloader
