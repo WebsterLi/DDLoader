@@ -25,7 +25,7 @@ func main() {
 	//Initial Setting
 	a := app.NewWithID("hentai.dl")
 	a.SetIcon(resourceDPng)
-	//a.Settings().SetTheme(&myTheme{})
+	a.Settings().SetTheme(&myTheme{})
 	w := a.NewWindow("DDownloader")
 	topWindow = w
 	content := container.NewMax()
