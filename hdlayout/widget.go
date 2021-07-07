@@ -42,6 +42,52 @@ func makeCheckList(num int)[]fyne.CanvasObject{
         return items
 }
 
+func wReadSearch(site string, win fyne.Window)(map[string]galdl, int){
+	m := make(map[string]galdl)
+	page := 1
+	// Request the HTML page.
+	res, err := http.Get(site)
+	if err != nil {
+		dialog.ShowInformation("Error", "Get http error.", win)
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != 200 {
+		dialog.ShowInformation("Invalid URL", "Gallery Not Found.", win)
+		return m, page
+	}
+
+	body, err := ioutil.ReadAll(res.Body)
+	reader := bytes.NewReader(body)
+	// Load the HTML document
+	doc, err := goquery.NewDocumentFromReader(reader)
+	if err != nil {
+		dialog.ShowInformation("Error", "Read query error.", win)
+	}
+	//TODO
+	// Find the galleries
+	doc.Find("a").Each(func(i int, s *goquery.Selection) {
+		href, ok := s.Attr("href")
+		if ok {
+			classes, ok := s.Attr("class")
+			if !ok {
+				for p := s.Parent(); p.Size() > 0 && !ok; p = p.Parent() {
+					classes, ok = p.Attr("class")
+				}
+			}
+
+			if classes == "title"{
+				key := s.Text()
+				m[key] = galdl{href, binding.NewBool()}
+			}else if classes == "f_left paginator"{
+				tmpage,_ := strconv.Atoi(s.Text())
+				if tmpage > page{ page = tmpage }
+			}
+		}
+	})
+	return m, page
+}
+
 func nReadSearch(site string, win fyne.Window)(map[string]galdl, int){
 	m := make(map[string]galdl)
 	var page int
@@ -167,7 +213,18 @@ func makeGASTab(win fyne.Window) fyne.CanvasObject {
 			switch service{
 			case "W":
 				site = fmt.Sprintf("https://www.wnacg.com/search/?q=%s", ASEntry.Text)
-				dialog.ShowInformation("Test", site, win)
+				candidate, end = wReadSearch(site,win)
+				count := 0
+				for key, value := range candidate{
+					if count < len(vlist){
+						vlist[count] = widget.NewCheckWithData(key, value.dl)
+					}else{
+						//should not work
+						dialog.ShowInformation("Error", "Page list out of range.", win)
+					}
+					count++
+				}
+				fmt.Println("Total pages: ", end)
 			case "N":
 				site = fmt.Sprintf("https://nhentai.net/search/?q=%s", ASEntry.Text)
 				candidate, end = nReadSearch(site,win)
@@ -210,6 +267,25 @@ func makeGASTab(win fyne.Window) fyne.CanvasObject {
 		ratio := float64(1)/float64(selected)
 		switch service{
 		case "W":
+			if len(candidate)==0{
+				dialog.ShowInformation("Error","Please select gallery first.",win)
+				return
+			}
+			d.Show()
+			prog := 0.0
+			for _, value := range candidate{
+				want,_ := value.dl.Get()
+				if want{
+					dlsite := fmt.Sprintf("https://www.wnacg.com%s",value.name)
+					title := strings.TrimSpace(GetTitle(dlsite, win))
+					titleText.SetText(fmt.Sprintf("Title: %s", title))
+					statusText.SetText("Status: html info parsing...")
+					request := []string{dlsite, service, path, title}
+					hbookURL(request,statusText,progBar,prog,ratio)
+					prog += ratio
+					progBar.SetValue(prog)
+				}
+			}
 		case "N":
 			if len(candidate)==0{
 				dialog.ShowInformation("Error","Please select gallery first.",win)

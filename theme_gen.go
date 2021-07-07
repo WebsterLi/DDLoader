@@ -24,7 +24,7 @@ func (myTheme) Color(c fyne.ThemeColorName, v fyne.ThemeVariant) color.Color {
 	case theme.ColorNameError:
 		return color.NRGBA{R: 0xf4, G: 0x43, B: 0x36, A: 0xff}
 	case theme.ColorNameFocus:
-		return color.NRGBA{R: 0x21, G: 0x96, B: 0xf3, A: 0x7f}
+		return color.NRGBA{R: 0xf4, G: 0x43, B: 0x36, A: 0x7f}
 	case theme.ColorNameForeground:
 		return color.NRGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}
 	case theme.ColorNameHover:
@@ -36,7 +36,7 @@ func (myTheme) Color(c fyne.ThemeColorName, v fyne.ThemeVariant) color.Color {
 	case theme.ColorNamePressed:
 		return color.NRGBA{R: 0xff, G: 0xff, B: 0xff, A: 0x66}
 	case theme.ColorNamePrimary:
-		return color.NRGBA{R: 0x21, G: 0x96, B: 0xf3, A: 0xff}
+		return color.NRGBA{R: 0xf4, G: 0x43, B: 0x36, A: 0xff}
 	case theme.ColorNameScrollBar:
 		return color.NRGBA{R: 0x0, G: 0x0, B: 0x0, A: 0x99}
 	case theme.ColorNameShadow:
@@ -48,18 +48,18 @@ func (myTheme) Color(c fyne.ThemeColorName, v fyne.ThemeVariant) color.Color {
 
 func (myTheme) Font(s fyne.TextStyle) fyne.Resource {
 	if s.Monospace {
-		return theme.DefaultTheme().Font(s)
+		return fontMPLUSRounded1cLightTtf
 	}
 	if s.Bold {
 		if s.Italic {
 			return theme.DefaultTheme().Font(s)
 		}
-		return theme.DefaultTheme().Font(s)
+		return fontMPLUSRounded1cBoldTtf
 	}
 	if s.Italic {
 		return theme.DefaultTheme().Font(s)
 	}
-	return fontOPPOSansRTtf
+	return fontMPLUSRounded1cRegularTtf
 }
 
 func (myTheme) Icon(n fyne.ThemeIconName) fyne.Resource {

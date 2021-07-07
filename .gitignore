@@ -1,7 +1,9 @@
 N_gallery
 W_gallery
+backup
 *.png
 *.go_bak
 tags
 ddloader
 ddloader.exe
+*.swp
